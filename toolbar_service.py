@@ -33,8 +33,11 @@ _STATE_FILE = os.path.join(_SERVICE_DIR, ".vd_state.json")
 _VD_SCRIPT = os.path.join(_SERVICE_DIR, "virtual_desktop.py")
 
 TOOLBAR_PID_FILE = os.path.join(_SERVICE_DIR, ".vd_toolbar.pid")
-TOOLBAR_LOG = os.path.join(_SERVICE_DIR, ".vd_toolbar.log")
-_UU_LOG = os.path.join(_SERVICE_DIR, ".vd_uu.log")
+# vd 日志统一落在 logs/ 子目录；导入即确保目录存在（两个日志的打开都在其后）
+_LOG_DIR = os.path.join(_SERVICE_DIR, "logs")
+os.makedirs(_LOG_DIR, exist_ok=True)
+TOOLBAR_LOG = os.path.join(_LOG_DIR, ".vd_toolbar.log")
+_UU_LOG = os.path.join(_LOG_DIR, ".vd_uu.log")
 
 
 # ── state 读取 ────────────────────────────────────────────────────────────
@@ -134,7 +137,7 @@ def _spawn_uu_open() -> None:
         finally:
             log_fp.close()
         print(f"[Toolbar] 已触发 uu-open（PID={p.pid}）：按需创建/切换 UU 远程桌面，"
-              f"日志见 .vd_uu.log", flush=True)
+              f"日志见 logs/.vd_uu.log", flush=True)
     except Exception as e:
         print(f"[Toolbar] 触发 uu-open 失败: {e}", flush=True)
 

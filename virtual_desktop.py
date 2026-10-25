@@ -2127,7 +2127,7 @@ _STATE_FILE = _SCRIPT_DIR / ".vd_state.json"
 _CONFIG_FILE = _SCRIPT_DIR / "virtual_desktop_config.json"
 # uu-open 懒创建的串行锁（防止连点电脑按钮导致 UU 被启动两份）
 _UU_LOCK_FILE = _SCRIPT_DIR / ".vd_uu.lock"
-_UU_LOG = _SCRIPT_DIR / ".vd_uu.log"
+_UU_LOG = _SCRIPT_DIR / "logs" / ".vd_uu.log"
 
 # 需要归位到"远程桌面"的客户端主进程名（小写）。必须按**进程名**全局识别，
 # 因为"早已运行"的 UU 不是 bootstrap 的子孙，按进程树枚举永远找不到它。
@@ -2881,7 +2881,7 @@ def do_bootstrap(args) -> int:
     toolbar_pid = _spawn_toolbar_service()
     if toolbar_pid is not None:
         print(f"[bootstrap] 🧰 Toolbar 服务已启动 PID={toolbar_pid}"
-              f"（屏幕底部悬停唤出；日志 .vd_toolbar.log）")
+              f"（屏幕底部悬停唤出；日志 logs/.vd_toolbar.log）")
 
     # Step 1.5: 启动 server.py 前确认手机 ADB 可达
     #   只检测一次（有 USB 设备直接通过；否则用 --phoneaddress 尝试 adb connect），
@@ -3063,7 +3063,7 @@ def do_bootstrap(args) -> int:
 
 
 def do_uu_open(args) -> int:
-    """Dock「电脑」按钮调用的懒创建入口（detached 独立进程，日志 .vd_uu.log）：
+    """Dock「电脑」按钮调用的懒创建入口（detached 独立进程，日志 logs/.vd_uu.log）：
 
       决策表：
         A) state.uu_active 且 UU 桌面仍存在 且 UU 进程存活
