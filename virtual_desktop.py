@@ -450,8 +450,8 @@ import pathlib as _pathlib
 import shutil as _shutil
 
 _SCRIPT_DIR = _pathlib.Path(__file__).resolve().parent
-# _PROJECT_ROOT 仅供 sys.path 注入（virtualdesk 包导入锚），与 Open-AutoGLM 无关；
-# server.py 地址一律走 config services 清单的 open_autoglm 条目，与 aux 同源。
+# _PROJECT_ROOT 仅供 sys.path 注入（virtualdesk 包导入锚），与 PhoneController 无关；
+# server.py 地址一律走 config services 清单的 phonecontroller 条目，与 aux 同源。
 _PROJECT_ROOT = _SCRIPT_DIR.parent
 
 # 脚本位于 virtualdesk/ 内，包导入（from virtualdesk.xxx import）需要项目根在
@@ -920,23 +920,23 @@ def _wait_until_hwnds_ready(
     return best_count, elapsed_ms
 
 
-def _get_open_autoglm_spec() -> dict:
-    """config services 清单中 key=="open_autoglm" 的条目：Open-AutoGLM server.py
+def _get_phonecontroller_spec() -> dict:
+    """config services 清单中 key=="phonecontroller" 的条目：PhoneController server.py
     的启动声明（与 handdetecter/asr 完全同构）。
       · script   —— server.py 绝对路径
       · host/port —— 探活/停止/嵌入参数地址（单一真相源）
       · cmd_args —— 追加在 `python server.py` 之后的启动参数（如 --model）
       · embed_host_port —— True 时启动命令嵌入 --host/--port（server.py 的
         CLI > YAML 合并优先级要求显式传参才能覆盖 YAML）
-    兼容：旧版顶层 "open_autoglm" 条目仍可识别（services 缺该 key 时回落）。
+    兼容：旧版顶层 "phonecontroller" 条目仍可识别（services 缺该 key 时回落）。
     缺失/非法字段自动补默认值，坏 config 不阻断。"""
     for spec in _get_aux_services():
-        if spec.get("key") == "open_autoglm":
+        if spec.get("key") == "phonecontroller":
             return spec
-    entry = _load_config().get("open_autoglm")
+    entry = _load_config().get("phonecontroller")
     spec = dict(entry) if isinstance(entry, dict) else {}
-    spec.setdefault("key", "open_autoglm")
-    spec.setdefault("label", "Open-AutoGLM server")
+    spec.setdefault("key", "phonecontroller")
+    spec.setdefault("label", "PhoneController server")
     spec.setdefault("probe_path", "/status")
     try:
         spec["port"] = int(spec.get("port") or 8080)
@@ -1342,7 +1342,7 @@ def _stop_toolbar_service() -> bool:
 # ASR 无单实例锁，因此启动前一律先 HTTP 探活，已在运行（含用户手动启动的）
 # 就跳过，绝不重复 Popen。服务全部 detached；无窗口服务的后台日志由各服务
 # 内部自行落盘（HandDetecter=app_log 的 logs/、ASR=logs/asr.log、
-# Open-AutoGLM=logs/server.log），vd 不再代管日志。
+# PhoneController=logs/server.log），vd 不再代管日志。
 # ---------------------------------------------------------------------------
 # 服务清单已配置化：virtual_desktop_config.json 的 "services" 数组优先，缺失/非法
 # 时回落到下面这份内置默认（= 历史硬编码清单，零破坏迁移）。
@@ -1382,16 +1382,16 @@ _DEFAULT_AUX_SERVICES: list[dict] = [
         "stop_pattern": r"[\\/]ASR[\\/]server\.py(?:\s|$)",
     },
     {
-        "key": "open_autoglm",
-        "label": "Open-AutoGLM server",
-        "script": str(_SCRIPT_DIR.parent / "Open-AutoGLM" / "server.py"),
+        "key": "phonecontroller",
+        "label": "PhoneController server",
+        "script": str(_SCRIPT_DIR.parent / "PhoneController" / "server.py"),
         "host": "127.0.0.1",
         "port": 8080,
         # /status 在 backdrop/主屏初始化后应答（app.run 前），scrcpy 树懒创建不影响就绪
         "probe_path": "/status",
         "ready_timeout_s": 18.0,
         "embed_host_port": True,
-        "stop_pattern": r"[\\/]Open-AutoGLM[\\/]server\.py(?:\s|$)",
+        "stop_pattern": r"[\\/]PhoneController[\\/]server\.py(?:\s|$)",
     },
 ]
 
@@ -1555,7 +1555,7 @@ def _stop_service_http(*, label: str, host: str, port: int,
                        probe_path: str = "/", pid: Optional[int] = None,
                        pattern: Optional["_re.Pattern"] = None,
                        wait_s: float = 15.0) -> None:
-    """统一三段式停止（services 清单全部服务同一流程，open_autoglm 也在内）：
+    """统一三段式停止（services 清单全部服务同一流程，phonecontroller 也在内）：
 
       1) POST /exit（短超时）：服务回 200 后由进程内 shutdown 信号走各自
          框架的优雅退出链（Flask：httpd.shutdown()；uvicorn：should_exit；
@@ -2115,7 +2115,7 @@ def _autodetect_phone(phoneaddress: Optional[str]):
 # ---------------------------------------------------------------------------
 # 状态文件 / 进程工具 / stop
 #   state（.vd_state.json）只登记 vd 侧观测字段（toolbar/aux/UU PID、
-#   桌面编号）；server 地址与停止全走 config（open_autoglm 条目）POST /exit
+#   桌面编号）；server 地址与停止全走 config（phonecontroller 条目）POST /exit
 #   三段式（服务进程内 shutdown 信号 → finally 停 backdrop + atexit stop_all
 #   清全部 scrcpy），不依赖 state 的 server 侧 PID。无 state 也能孤儿清扫。
 # ---------------------------------------------------------------------------
@@ -2609,7 +2609,7 @@ def do_stop(args) -> int:
        进程拓扑与各自归宿：
          · Toolbar 服务（virtual_desktop.py toolbar，detached）… state PID 优先、
            同域 .vd_toolbar.pid 文件兜底，一个进程托管各虚拟桌面的底部 Dock；
-         · config services 清单全部服务（handdetecter / asr / open_autoglm）…
+         · config services 清单全部服务（handdetecter / asr / phonecontroller）…
            统一三段式：POST /exit（服务进程内 shutdown 信号走自身优雅链：
            server finally 停 backdrop + atexit 停全部 scrcpy 显示树；Flask
            httpd.shutdown()；uvicorn should_exit 官方 graceful shutdown）
@@ -2660,9 +2660,9 @@ def do_stop(args) -> int:
             print(f"[stop] Toolbar 服务 PID={toolbar_pid} 已停止（各桌面底部 Dock 消失）。",
                   flush=True)
 
-        # ---- 2.5) config services 清单全部服务（含 open_autoglm 主 server）：
+        # ---- 2.5) config services 清单全部服务（含 phonecontroller 主 server）：
         #      统一 _stop_aux_services 三段式，顺序 = config 条目顺序
-        #      （open_autoglm 放最后：aux 先停、server 后停，与历史语义一致）。
+        #      （phonecontroller 放最后：aux 先停、server 后停，与历史语义一致）。
         #      必须先于下面 4a 的命令行兜底清扫：外部 server.py 的命令行也会被
         #      _STOP_CMDLINE_PATTERNS["server"] 命中，先在本步按专属 label 干净关闭。
         _stop_aux_services(st)
@@ -2808,7 +2808,7 @@ def do_status(args) -> int:
         return 1
     print(f"活动 bootstrap 会话（{_STATE_FILE.name}）：")
     print(f"  启动时间      : {st.get('started_at')}")
-    # config services 清单统一探活展示（open_autoglm 与 aux 同一行式）
+    # config services 清单统一探活展示（phonecontroller 与 aux 同一行式）
     for _aux in _get_aux_services():
         _pid = st.get(f"aux_{_aux['key']}_pid")
         _up = _http_port_answers(_aux["host"], _aux["port"], _aux["probe_path"])
@@ -2844,12 +2844,12 @@ def do_bootstrap(args) -> int:
       2) 检测一次手机 ADB 可达性；不可达则弹出 macOS 登录风连接窗口
          （输入手机局域网 IP 或插好 USB 后点「登入」重试；失败保持窗口
          并显示/打印错误；取消则中止）——不再后台循环等待 5 分钟；
-      3) Step 0 启动 config services 清单里除 open_autoglm 外的全部服务；
+      3) Step 0 启动 config services 清单里除 phonecontroller 外的全部服务；
          手机 ADB 就绪后，Step 2 用同一 _ensure_aux_service 启动
-         open_autoglm（探活已在跑则跳过；失败仅告警不阻断）；
+         phonecontroller（探活已在跑则跳过；失败仅告警不阻断）；
       4) 审计报告：枚举 server 子孙 PID 的全部 HWND 与真实桌面归属；
       5) state 落盘（uu_active=False，UU 相关字段为空；aux_{key}_pid
-         含 open_autoglm 在内的本次新启动服务 PID）。
+         含 phonecontroller 在内的本次新启动服务 PID）。
     """
     vd = VirtualDesktops()
     server_desk = vd.current_index()
@@ -2867,11 +2867,11 @@ def do_bootstrap(args) -> int:
     #   内置默认 = 手势识别 HandDetecter(8000) → 语音识别 ASR(8081)。ASR 识别
     #   结果回调 127.0.0.1:8080/run（主 server.py 在后面 Step 2 才启动），故
     #   必须先起；已在运行则跳过（幂等），任何失败只告警、不阻断后续 bootstrap。
-    #   open_autoglm（主 server）例外：须等手机 ADB 就绪（Step 1.5）后于 Step 2
+    #   phonecontroller（主 server）例外：须等手机 ADB 就绪（Step 1.5）后于 Step 2
     #   启动，本循环跳过——但启动函数与 aux 完全同一 _ensure_aux_service。
     aux_pids: dict[str, Optional[int]] = {}
     for _aux_spec in _get_aux_services():
-        if _aux_spec.get("key") == "open_autoglm":
+        if _aux_spec.get("key") == "phonecontroller":
             continue
         aux_pids[_aux_spec["key"]] = _ensure_aux_service(_aux_spec)
     print("-" * 64)
@@ -2926,16 +2926,16 @@ def do_bootstrap(args) -> int:
         print(f"[bootstrap] ✅ {phone_msg}")
 
     # =====================================================================
-    # Step 2：启动 Open-AutoGLM server —— 与 aux 同一 _ensure_aux_service：
+    # Step 2：启动 PhoneController server —— 与 aux 同一 _ensure_aux_service：
     #   探活已在跑则跳过（幂等复用）/ 无窗口 detached / 日志
-    #   .vd_aux_open_autoglm.log / --host --port 嵌入（embed_host_port）/
+    #   .vd_aux_phonecontroller.log / --host --port 嵌入（embed_host_port）/
     #   /status 就绪轮询（ready_timeout_s）/ 失败仅告警。
     #   script/host/port/cmd_args 全来自 config services 条目（单一真相源）；
     #   单桌面出生即正确，无需切桌时序。
     # =====================================================================
-    print(f"\n=== Step 2 / 2 ：当前桌面 #{server_desk} → Open-AutoGLM server ===")
-    oag = _get_open_autoglm_spec()
-    aux_pids[oag["key"]] = _ensure_aux_service(oag)
+    print(f"\n=== Step 2 / 2 ：当前桌面 #{server_desk} → PhoneController server ===")
+    pc = _get_phonecontroller_spec()
+    aux_pids[pc["key"]] = _ensure_aux_service(pc)
 
     # =====================================================================
     # Step 3（已并入 Step 2）：旧 sweeper poller join 段随强隔离壳一并移除；
@@ -3002,17 +3002,17 @@ def do_bootstrap(args) -> int:
         print(f"    汇总: {correct} 个在 #{expected_idx}，{wrong} 个不在（共 {len(hwnds)} 个窗口）。")
         return correct, wrong
 
-    oag_pid = aux_pids.get("open_autoglm")
+    pc_pid = aux_pids.get("phonecontroller")
     total_ok, total_ng = _audit_one(
         f"桌面 #{server_desk} / server.py 的子孙窗口（手机布局）",
-        oag_pid if isinstance(oag_pid, int) else None, server_desk,
+        pc_pid if isinstance(pc_pid, int) else None, server_desk,
     )
 
     print()
     print("-" * 80)
-    srv_state = (f"OK  PID={oag_pid}" if isinstance(oag_pid, int)
+    srv_state = (f"OK  PID={pc_pid}" if isinstance(pc_pid, int)
                  else "外部实例复用/未启动（无本次 PID，跳过审计）")
-    print(f"  当前桌面 #{server_desk} / server.py（手机布局）→ {srv_state}  |  cwd = {oag['script']}")
+    print(f"  当前桌面 #{server_desk} / server.py（手机布局）→ {srv_state}  |  cwd = {pc['script']}")
     print(f"  UU 远程桌面 → 未创建（点 Dock「电脑」按钮按需创建）")
     if total_ng == 0:
         print(f"\n  🎯 审计通过：共 {total_ok} 个窗口全部在当前桌面 #{server_desk}。")
@@ -3035,7 +3035,7 @@ def do_bootstrap(args) -> int:
     #   信号走自身优雅链收子进程树），state 不登记 server 侧 PID 与地址，只留 vd
     #   侧观测字段（toolbar/aux/UU/桌面）。
     # =====================================================================
-    if not isinstance(aux_pids.get("open_autoglm"), int):
+    if not isinstance(aux_pids.get("phonecontroller"), int):
         print("[bootstrap] ⚠️  server.py 本次未新启动（已在运行被复用，或启动失败"
               "仅告警不阻断）；stop 将按 config 地址请求 /exit，再由命令行特征兜底清扫。")
     state = {
@@ -3210,7 +3210,7 @@ def main() -> int:
              "UU 桌面/UU 远程由 toolbar 电脑钮触发 uu-open 按需懒创建",
     )
     # ===== 模式 =====
-    # server 启动参数全在 config services 清单的 open_autoglm 条目静态声明
+    # server 启动参数全在 config services 清单的 phonecontroller 条目静态声明
     # （script/host/port/cmd_args/ready_timeout_s），bootstrap 不再有动态透传。
     p_boot.add_argument("--phoneaddress", default=None,
                         help="启动 server 前若无 ADB 有线(USB)设备，则对该地址执行 "

@@ -25,15 +25,15 @@
       "stop_pattern": "[\\\\/]ASR[\\\\/]server\\.py(?:\\s|$)"
     },
     {
-      "key": "open_autoglm",
-      "label": "Open-AutoGLM server",
-      "script": "D:\\TraeProj\\Open-AutoGLM\\server.py",
+      "key": "phonecontroller",
+      "label": "PhoneController server",
+      "script": "D:\\TraeProj\\PhoneController\\server.py",
       "host": "127.0.0.1",
       "port": 8080,
       "probe_path": "/status",
       "ready_timeout_s": 18.0,
       "embed_host_port": true,
-      "stop_pattern": "[\\\\/]Open-AutoGLM[\\\\/]server\\.py(?:\\s|$)",
+      "stop_pattern": "[\\\\/]PhoneController[\\\\/]server\\.py(?:\\s|$)",
       "cmd_args": []
     }
   ]

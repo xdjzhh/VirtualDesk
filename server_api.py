@@ -4,8 +4,8 @@
 toolbar 是独立常驻进程，可能在 server 启动之前就已运行（登录窗阶段），
 因此所有接口都必须「连不上就返回失败」，绝不抛异常打断 UI。
 server 地址来自 virtual_desktop_config.json 的 services 清单中
-key=="open_autoglm" 条目的 host/port（config 唯一真相源，与
-virtual_desktop.py 的 _get_open_autoglm_spec 同源），缺省 127.0.0.1:8080。
+key=="phonecontroller" 条目的 host/port（config 唯一真相源，与
+virtual_desktop.py 的 _get_phonecontroller_spec 同源），缺省 127.0.0.1:8080。
 """
 
 import json
@@ -23,20 +23,20 @@ _DEFAULT_PORT = 8080
 
 
 def base_url(timeout: float = 0.4) -> str:
-    """从 config services 清单的 open_autoglm 条目解析 server 基址；
+    """从 config services 清单的 phonecontroller 条目解析 server 基址；
     任何异常回退默认地址。"""
     host, port = _DEFAULT_HOST, _DEFAULT_PORT
     try:
         with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
-        # services 清单里的 open_autoglm 条目优先；旧版顶层条目兼容回落
-        oag = cfg.get("open_autoglm") or {}
+        # services 清单里的 phonecontroller 条目优先；旧版顶层条目兼容回落
+        pc = cfg.get("phonecontroller") or {}
         for spec in (cfg.get("services") or []):
-            if isinstance(spec, dict) and spec.get("key") == "open_autoglm":
-                oag = spec
+            if isinstance(spec, dict) and spec.get("key") == "phonecontroller":
+                pc = spec
                 break
-        host = str(oag.get("host") or host)
-        port = int(oag.get("port") or port)
+        host = str(pc.get("host") or host)
+        port = int(pc.get("port") or port)
     except Exception:
         pass
     return f"http://{host}:{port}"
