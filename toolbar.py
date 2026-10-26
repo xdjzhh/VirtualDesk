@@ -21,7 +21,6 @@ Virtual Desktop Manager 注册，会在所有虚拟桌面漂浮。
 
 import ctypes
 import ctypes.wintypes as wintypes
-import json
 import math
 import os
 
@@ -92,8 +91,6 @@ def _safe_hwnd(h):
 
 
 # ── 「手机」按钮：把指定窗口嵌入当前所在虚拟桌面 ───────────────────────────
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_MAIN_DISPLAY_CONFIG = os.path.join(_PROJECT_ROOT, "scrcpycontrol", "display_config.json")
 
 
 def find_top_window_by_title(title: str) -> int:
@@ -156,14 +153,8 @@ def bring_window_to_current_desktop(window_title: str) -> tuple[bool, str]:
 
 
 def main_display_window_title() -> str:
-    """main_display 窗口标题（单一真相源 display_config.json，回退「手机桌面」）。"""
-    try:
-        with open(_MAIN_DISPLAY_CONFIG, "r", encoding="utf-8") as f:
-            title = json.load(f).get("main_display", {}).get("window_title")
-            if title:
-                return str(title)
-    except Exception:
-        pass
+    """main_display 窗口标题（写死；与 scrcpycontrol/display_config.json 的
+    main_display.window_title 保持一致）。"""
     return "手机桌面"
 
 

@@ -1353,11 +1353,13 @@ def _stop_toolbar_service() -> bool:
 # 后台日志一律由各服务内部自行落盘。
 # cmd_args：追加在 `python script` 之后的启动参数（可选）；
 # stop_pattern：stop 兜底清扫的命令行正则（可选，缺省由 script 完整路径推导）。
+# 兜底默认：当前部署形态（virtualdesk 与三个服务项目同级，均在部署根下），
+# script 一律由「服务父目录 + 项目名 + server.py」推导，随部署位置自动跟随。
 _DEFAULT_AUX_SERVICES: list[dict] = [
     {
         "key": "handdetecter",
         "label": "手势识别 HandDetecter",
-        "script": r"D:\TraeProj\HandDetecterForEye\server.py",
+        "script": str(_SCRIPT_DIR.parent / "HandDetecterForEye" / "server.py"),
         "host": "127.0.0.1",
         "port": 8000,
         "probe_path": "/status",
@@ -1369,7 +1371,7 @@ _DEFAULT_AUX_SERVICES: list[dict] = [
     {
         "key": "asr",
         "label": "语音识别 ASR",
-        "script": r"D:\TraeProj\ASR\server.py",
+        "script": str(_SCRIPT_DIR.parent / "ASR" / "server.py"),
         "host": "127.0.0.1",
         "port": 8081,
         # /health 在模型加载期也回 200(status=loading)，HTTP 起来即可；
@@ -1382,8 +1384,7 @@ _DEFAULT_AUX_SERVICES: list[dict] = [
     {
         "key": "open_autoglm",
         "label": "Open-AutoGLM server",
-        # 兜底默认：当前部署形态（virtualdesk 位于 Open-AutoGLM 项目内）
-        "script": str(_SCRIPT_DIR.parent / "server.py"),
+        "script": str(_SCRIPT_DIR.parent / "Open-AutoGLM" / "server.py"),
         "host": "127.0.0.1",
         "port": 8080,
         # /status 在 backdrop/主屏初始化后应答（app.run 前），scrcpy 树懒创建不影响就绪
